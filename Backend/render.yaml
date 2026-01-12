@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: exam-hall-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      # Note: Add other environment variables through Render dashboard
+      # MONGODB_URI, JWT_SECRET, etc. should be added as secrets in Render UI
