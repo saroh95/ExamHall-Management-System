@@ -67,6 +67,13 @@ if (environment.isDevelopment) {
 } else {
   app.use(morgan('combined'));
 }
+app.get('/', (req, res) => {
+  res.status(200).json({
+    message: 'Backend is running successfully 🚀',
+    status: 'OK'
+  });
+});
+
 
 // Static files
 app.use('/uploads', express.static('uploads'));
