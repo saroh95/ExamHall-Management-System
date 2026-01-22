@@ -135,7 +135,8 @@ const errorHandler = (err, req, res, next) => {
 
 // 404 handler
 const notFound = (req, res, next) => {
-  const error = new NotFoundError(`Route ${req.originalUrl} not found`);
+  // NotFoundError appends " not found", so don't include "not found" twice
+  const error = new NotFoundError(`Route ${req.originalUrl}`);
   next(error);
 };
 

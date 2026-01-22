@@ -88,6 +88,24 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Root endpoint (useful for Render "Open in browser" and quick sanity checks)
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Exam Hall Management System backend is running',
+    health: '/health',
+    apiBase: '/api',
+  });
+});
+
+// Optional: API base ping
+app.get('/api', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'API is reachable',
+  });
+});
+
 // API routes
 app.use('/api', apiRoutes);
 
