@@ -1,20 +1,60 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+// Get API base URL from environment variable
+const envApiUrl = import.meta.env.VITE_API_BASE_URL;
+const defaultApiUrl = import.meta.env.DEV 
+  ? 'http://localhost:5000/api' 
+  : null;
 
-// Debug: Log API configuration on load (only in development)
-if (import.meta.env.DEV) {
-  console.log('🔧 API Configuration:', {
-    VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
-    API_BASE_URL: API_BASE_URL,
-    allEnvVars: import.meta.env,
-  });
+// Normalize and validate API_BASE_URL
+let API_BASE_URL = null;
+
+if (envApiUrl) {
+  // Remove whitespace and trailing slashes
+  let normalized = String(envApiUrl).trim();
   
-  // Warn if using default localhost URL
-  if (!import.meta.env.VITE_API_BASE_URL) {
-    console.warn('⚠️  VITE_API_BASE_URL not set! Using default: http://localhost:5000/api');
-    console.warn('💡 For local dev, create Frontend/.env.local with: VITE_API_BASE_URL=http://localhost:5000/api');
-    console.warn('💡 For production, set VITE_API_BASE_URL in Netlify environment variables');
+  // Remove trailing slash
+  normalized = normalized.replace(/\/+$/, '');
+  
+  // If it's a valid URL (starts with http:// or https://)
+  if (normalized.match(/^https?:\/\//)) {
+    // Ensure it ends with /api
+    if (!normalized.endsWith('/api')) {
+      normalized = normalized + '/api';
+    }
+    API_BASE_URL = normalized;
+  } else if (normalized && normalized !== '/api') {
+    // If it's not empty and not just '/api', it might be a relative path
+    console.warn('⚠️  VITE_API_BASE_URL appears to be a relative path:', normalized);
+    console.warn('💡 It should be a full URL like: https://your-backend.onrender.com/api');
+  }
+}
+
+// Fallback to default for development
+if (!API_BASE_URL) {
+  API_BASE_URL = defaultApiUrl;
+}
+
+// Log API configuration (both dev and production for debugging)
+console.log('🔧 API Configuration:', {
+  VITE_API_BASE_URL: envApiUrl || '(not set)',
+  API_BASE_URL: API_BASE_URL || '(invalid)',
+  mode: import.meta.env.MODE,
+  isDev: import.meta.env.DEV,
+});
+
+// Warn if API URL is not configured properly
+if (!API_BASE_URL || API_BASE_URL === '/api' || !API_BASE_URL.match(/^https?:\/\//)) {
+  const errorMsg = '🚨 CRITICAL: API_BASE_URL is not configured correctly!';
+  console.error(errorMsg);
+  console.error('💡 Set VITE_API_BASE_URL in Netlify environment variables');
+  console.error('💡 Format: https://your-backend.onrender.com/api');
+  console.error('💡 Current value:', envApiUrl || '(not set)');
+  console.error('💡 Resolved value:', API_BASE_URL || '(invalid)');
+  
+  // In production, show alert to user
+  if (!import.meta.env.DEV) {
+    console.error('🚨 Frontend cannot connect to backend. Please check environment configuration.');
   }
 }
 
@@ -33,6 +73,22 @@ export const TokenManager = {
     }
   }
 };
+
+// Validate API_BASE_URL before creating axios instance
+if (!API_BASE_URL || !API_BASE_URL.match(/^https?:\/\/.+\/api$/)) {
+  const errorMsg = 
+    'API_BASE_URL is not configured correctly!\n' +
+    'Set VITE_API_BASE_URL environment variable in Netlify.\n' +
+    'Format: https://your-backend.onrender.com/api\n' +
+    'Current value: ' + (envApiUrl || '(not set)');
+  
+  console.error('🚨', errorMsg);
+  
+  // Don't throw in production to allow app to load, but log error
+  if (import.meta.env.DEV) {
+    throw new Error(errorMsg);
+  }
+}
 
 // Create axios instance
 const api = axios.create({
