@@ -2,6 +2,22 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
+// Debug: Log API configuration on load (only in development)
+if (import.meta.env.DEV) {
+  console.log('🔧 API Configuration:', {
+    VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+    API_BASE_URL: API_BASE_URL,
+    allEnvVars: import.meta.env,
+  });
+  
+  // Warn if using default localhost URL
+  if (!import.meta.env.VITE_API_BASE_URL) {
+    console.warn('⚠️  VITE_API_BASE_URL not set! Using default: http://localhost:5000/api');
+    console.warn('💡 For local dev, create Frontend/.env.local with: VITE_API_BASE_URL=http://localhost:5000/api');
+    console.warn('💡 For production, set VITE_API_BASE_URL in Netlify environment variables');
+  }
+}
+
 // Token Manager
 export const TokenManager = {
   getAccessToken: () => localStorage.getItem('token'),

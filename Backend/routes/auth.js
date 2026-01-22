@@ -49,7 +49,21 @@ const validateRegistration = [
     .withMessage('Invalid role'),
 ];
 
-const validateLogin = [
+// Login validators
+// - Users (admin/user) can login via email OR username
+// - Students/Teachers login via email
+const validateUserLogin = [
+  body('email')
+    .notEmpty()
+    .withMessage('Email or username is required')
+    .isLength({ max: 254 })
+    .withMessage('Email/username is too long'),
+  body('password')
+    .notEmpty()
+    .withMessage('Password is required'),
+];
+
+const validateEmailLogin = [
   body('email')
     .isEmail()
     .withMessage('Please provide a valid email'),
@@ -86,19 +100,20 @@ const validateResetPassword = [
 router.post('/register', validateRegistration, register);
 
 // @route   POST /api/auth/login
-// @desc    Login user
+// @desc    Login user (email OR username)
 // @access  Public
-router.post('/login', validateLogin, login);
+router.post('/login', validateUserLogin, login);
 
 // @route   POST /api/auth/student-login
-// @desc    Login student
+// @desc    Login student (email)
 // @access  Public
-router.post('/student-login', validateLogin, studentLogin);
+router.post('/student-login', validateEmailLogin, studentLogin);
 
 // @route   POST /api/auth/teacher-login
-// @desc    Login teacher
+// @desc    Login teacher (email)
 // @access  Public
-router.post('/teacher-login', validateLogin, teacherLogin);
+router.post('/teacher-login', validateEmailLogin, teacherLogin);
+
 
 // @route   GET /api/auth/me
 // @desc    Get current user

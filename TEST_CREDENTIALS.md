@@ -24,11 +24,6 @@ After running the seed script (`node Backend/scripts/seed-test-users.js`), you c
 - **Role:** Student
 - **Access:** Can view exam schedules, seating arrangements, and personal information
 
-### 👮 Invigilator Account
-- **Email:** `invigilator@test.com`
-- **Password:** `invigilator123`
-- **Role:** Invigilator
-- **Access:** Can manage exam attendance and monitor exam halls
 
 ## 🚀 Setting Up Test Users
 

@@ -2,6 +2,11 @@
  * Seed Script for Test Users
  * 
  * This script creates test users with different roles for testing the application.
+ * It creates:
+ * - Admin/User records in the User model
+ * - Student records in the Student model
+ * - Teacher records in the Teacher model
+ * 
  * Run this script after setting up MongoDB Atlas connection.
  * 
  * Usage: node scripts/seed-test-users.js
@@ -10,9 +15,27 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const mongoose = require('mongoose');
 const User = require('../models/User');
+const Student = require('../models/Student');
+const Teacher = require('../models/Teacher');
+const Department = require('../models/Department');
 const connectDB = require('../config/database');
 
-// Test users to create
+// Helper function to get or create a test department
+async function getOrCreateTestDepartment() {
+  let dept = await Department.findOne({ code: 'CSE' });
+  if (!dept) {
+    dept = await Department.create({
+      name: 'Computer Science and Engineering',
+      code: 'CSE',
+      description: 'Test department for seeding',
+      isActive: true,
+    });
+    console.log('✅ Created test department: CSE');
+  }
+  return dept;
+}
+
+// Test users to create (for User model - admin/invigilator)
 const testUsers = [
   {
     username: 'admin',
@@ -22,28 +45,6 @@ const testUsers = [
     lastName: 'User',
     phone: '1234567890',
     role: 'admin',
-    isEmailVerified: true,
-    isActive: true,
-  },
-  {
-    username: 'teacher1',
-    email: 'teacher@test.com',
-    password: 'teacher123',
-    firstName: 'John',
-    lastName: 'Teacher',
-    phone: '1234567891',
-    role: 'teacher',
-    isEmailVerified: true,
-    isActive: true,
-  },
-  {
-    username: 'student1',
-    email: 'student@test.com',
-    password: 'student123',
-    firstName: 'Jane',
-    lastName: 'Student',
-    phone: '1234567892',
-    role: 'student',
     isEmailVerified: true,
     isActive: true,
   },
@@ -60,6 +61,38 @@ const testUsers = [
   },
 ];
 
+// Test student to create (for Student model)
+const testStudent = {
+  fullName: 'Jane Student',
+  personalEmail: 'student.personal@test.com',
+  instituteEmail: 'student@test.com',
+  password: 'student123',
+  contactNumber: '1234567892',
+  semester: 'Semester 5',
+  section: 'A',
+  batchYear: '2024',
+  address: '123 Test Street, Test City',
+  isEmailVerified: true,
+  isActive: true,
+};
+
+// Test teacher to create (for Teacher model)
+const testTeacher = {
+  fullName: 'John Teacher',
+  personalEmail: 'teacher.personal@test.com',
+  instituteEmail: 'teacher@test.com',
+  password: 'teacher123',
+  phone: '1234567891',
+  address: '456 Test Avenue, Test City',
+  qualification: 'M.Tech in Computer Science',
+  specialization: 'Software Engineering',
+  joiningDate: new Date('2020-01-01'),
+  experience: 5,
+  designation: 'Assistant Professor',
+  isEmailVerified: true,
+  isActive: true,
+};
+
 async function seedTestUsers() {
   try {
     console.log('🌱 Starting test user seeding...');
@@ -68,60 +101,108 @@ async function seedTestUsers() {
     await connectDB();
     console.log('✅ Connected to MongoDB');
 
-    // Clear existing test users (optional - comment out if you want to keep existing users)
-    const testEmails = testUsers.map(u => u.email);
-    const existingUsers = await User.find({ email: { $in: testEmails } });
-    
-    if (existingUsers.length > 0) {
-      console.log(`⚠️  Found ${existingUsers.length} existing test users.`);
-      console.log('   To avoid duplicates, existing test users will be skipped.');
-    }
+    // Get or create test department
+    const department = await getOrCreateTestDepartment();
+    testStudent.department = department._id;
+    testTeacher.department = department._id;
 
-    // Create test users
-    let created = 0;
-    let skipped = 0;
+    // Create User records (admin/invigilator)
+    let userCreated = 0;
+    let userSkipped = 0;
 
     for (const userData of testUsers) {
       try {
-        // Check if user already exists
         const existingUser = await User.findByEmail(userData.email);
         if (existingUser) {
-          console.log(`⏭️  Skipping ${userData.email} - already exists`);
-          skipped++;
+          console.log(`⏭️  Skipping User ${userData.email} - already exists`);
+          userSkipped++;
           continue;
         }
 
-        // Create user (password will be hashed automatically by the model)
         const user = await User.create(userData);
         console.log(`✅ Created ${userData.role}: ${userData.email} (Password: ${userData.password})`);
-        created++;
+        userCreated++;
       } catch (error) {
         if (error.code === 11000) {
-          console.log(`⏭️  Skipping ${userData.email} - duplicate entry`);
-          skipped++;
+          console.log(`⏭️  Skipping User ${userData.email} - duplicate entry`);
+          userSkipped++;
         } else {
-          console.error(`❌ Error creating ${userData.email}:`, error.message);
+          console.error(`❌ Error creating User ${userData.email}:`, error.message);
         }
       }
     }
 
+    // Create Student record
+    let studentCreated = 0;
+    let studentSkipped = 0;
+
+    try {
+      const existingStudent = await Student.findByEmail(testStudent.instituteEmail);
+      if (existingStudent) {
+        console.log(`⏭️  Skipping Student ${testStudent.instituteEmail} - already exists`);
+        studentSkipped++;
+      } else {
+        // Note: scholarId will be auto-generated by the model
+        const student = await Student.create(testStudent);
+        console.log(`✅ Created Student: ${testStudent.instituteEmail} (Password: ${testStudent.password})`);
+        console.log(`   Scholar ID: ${student.scholarId}`);
+        studentCreated++;
+      }
+    } catch (error) {
+      if (error.code === 11000) {
+        console.log(`⏭️  Skipping Student ${testStudent.instituteEmail} - duplicate entry`);
+        studentSkipped++;
+      } else {
+        console.error(`❌ Error creating Student ${testStudent.instituteEmail}:`, error.message);
+      }
+    }
+
+    // Create Teacher record
+    let teacherCreated = 0;
+    let teacherSkipped = 0;
+
+    try {
+      const existingTeacher = await Teacher.findByEmail(testTeacher.instituteEmail);
+      if (existingTeacher) {
+        console.log(`⏭️  Skipping Teacher ${testTeacher.instituteEmail} - already exists`);
+        teacherSkipped++;
+      } else {
+        // Note: employeeId will be auto-generated by the model
+        const teacher = await Teacher.create(testTeacher);
+        console.log(`✅ Created Teacher: ${testTeacher.instituteEmail} (Password: ${testTeacher.password})`);
+        console.log(`   Employee ID: ${teacher.employeeId}`);
+        teacherCreated++;
+      }
+    } catch (error) {
+      if (error.code === 11000) {
+        console.log(`⏭️  Skipping Teacher ${testTeacher.instituteEmail} - duplicate entry`);
+        teacherSkipped++;
+      } else {
+        console.error(`❌ Error creating Teacher ${testTeacher.instituteEmail}:`, error.message);
+      }
+    }
+
     console.log('\n📊 Seeding Summary:');
-    console.log(`   ✅ Created: ${created} users`);
-    console.log(`   ⏭️  Skipped: ${skipped} users`);
+    console.log(`   ✅ Created: ${userCreated} users, ${studentCreated} students, ${teacherCreated} teachers`);
+    console.log(`   ⏭️  Skipped: ${userSkipped} users, ${studentSkipped} students, ${teacherSkipped} teachers`);
     console.log('\n🎉 Test user seeding completed!');
     console.log('\n📝 Test Credentials:');
-    console.log('   Admin:');
+    console.log('   Admin/User:');
     console.log('     Email: admin@test.com');
     console.log('     Password: admin123');
+    console.log('     Login via: /auth/login (select "Admin/User" role)');
     console.log('   Teacher:');
     console.log('     Email: teacher@test.com');
     console.log('     Password: teacher123');
+    console.log('     Login via: /auth/teacher-login (select "Teacher" role)');
     console.log('   Student:');
     console.log('     Email: student@test.com');
     console.log('     Password: student123');
+    console.log('     Login via: /auth/student-login (select "Student" role)');
     console.log('   Invigilator:');
     console.log('     Email: invigilator@test.com');
     console.log('     Password: invigilator123');
+    console.log('     Login via: /auth/login (select "Admin/User" role)');
 
     // Close database connection
     await mongoose.connection.close();
@@ -135,4 +216,3 @@ async function seedTestUsers() {
 
 // Run the seed script
 seedTestUsers();
-
